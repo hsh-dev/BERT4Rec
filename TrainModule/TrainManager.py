@@ -97,24 +97,9 @@ class TrainManager():
         start_time = time.time()
 
         for idx, sample in enumerate(dataset):
-            x, y = sample
-            # n_s = self.dataloader.get_negative_sample(u)  
-            
-            # if idx == 0:
-            #     ## Trace Initialize
-            #     stamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
-            #     logdir = 'log/func/%s' % stamp
-            #     writer = tf.summary.create_file_writer(logdir)
-            #     tf.summary.trace_on(graph=True, profiler=True)
-            
-            loss, y_pred, hr = self.propagate_with_graph(x, y, phase, k = 10)
-            # if idx == 0:
-            #     ## Write
-            #     with writer.as_default():
-            #         tf.summary.trace_export(name="my_func_trace",
-            #                                 step=0,
-            #                                 profiler_outdir=logdir)
-            #     tf.summary.trace_off()
+            x, y, mask = sample            
+
+            loss, y_pred, hr = self.propagate_with_graph(x, y, mask, phase, k = 10)
                 
             all_loss_list.append(loss)
             loss_list.append(loss)
@@ -132,7 +117,8 @@ class TrainManager():
                                                                 round(losses, 7), 
                                                                 round(end_time - start_time, 5)
                                                                 ))
-                print("HR: {} ".format(round(hr_avg, 7)))
+                if phase == "valid":
+                    print("HR: {} ".format(round(hr_avg, 7)))
                 
                 loss_list.clear()
                 hr_list.clear()
@@ -150,20 +136,23 @@ class TrainManager():
         return one_hot
 
     @tf.function
-    def propagate_with_graph(self, x, y, phase, k):
-        loss, y_pred = self.propagation(x, y, phase)
+    def propagate_with_graph(self, x, y, mask, phase, k):
+        loss, y_pred = self.propagation(x, y, mask, phase)
         
-        hit_rate = self.score_manager.hit_rate(y, y_pred, k)
+        hit_rate = 0
+        if phase == "valid":
+            hit_rate = self.score_manager.hit_rate(y, y_pred, k)
         
         return loss, y_pred, hit_rate
 
 
-    def propagation(self, x, y_true, phase):
+    def propagation(self, x, y_true, mask, phase):
         with tf.GradientTape() as tape:
             y_pred = self.model(x)
-                        
-            loss = self.loss_manager.bpr_loss(y_true, y_pred)
- 
+            
+            # loss = self.loss_manager.bpr_loss(y_true, y_pred)
+            loss = self.loss_manager.negative_log_with_mask(y_true, y_pred, mask)
+            
         gradients = tape.gradient(loss, self.model.trainable_variables)
         
         if phase == "train":

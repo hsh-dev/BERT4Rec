@@ -3,7 +3,7 @@ from tensorflow.keras import Model, Sequential
 from tensorflow.keras.layers import Dense
 
 from Models.Embedding_Model import Embedding
-from Models.Attention_Model import SelfAttentionLayer
+from Models.Attention_Layer import SelfAttentionLayer
 
 class SAS(Model):
     def __init__(self, i_dim, n_dim, d_dim, b_num):

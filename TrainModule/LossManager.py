@@ -6,7 +6,6 @@ class LossManager():
     '''
     Loss Functions
     '''
-
     def __init__(self) -> None:
         pass
 
@@ -16,6 +15,28 @@ class LossManager():
 
         return err
 
+    def negative_log_with_mask(self, y_true, y_pred, mask):
+        '''
+        y_true : B x N
+        y_pred : B x N x I
+        -> true logits : B x N
+        -> masking : B x N
+        '''
+        logits = tf.gather(y_pred,
+                           indices = y_true,
+                           axis = 2,
+                           batch_dims = 2)
+        logits = -K.log(logits)
+        
+        mask_count = tf.cast(tf.math.count_nonzero(mask), tf.float32)
+        mask = tf.cast(mask, tf.float32)
+
+        masked_logits = logits * mask
+        logit_sum = K.sum(masked_logits)
+        loss = logit_sum / mask_count
+
+        return loss
+    
     def bpr_loss_with_ns(self, y_true_idx, negative_idx, y_pred):  
         '''
         BPR Loss with Negative Sampling

@@ -56,8 +56,11 @@ class DataLoader():
         
         self._make_negative_sample(train_set, valid_set)
         
-        self.train_x, self.train_y, self.train_u = self.make_seq_to_seq(train_set, 20)              
-        self.valid_x, self.valid_y, self.valid_u = self.make_seq_to_seq(valid_set, 20)        
+        # self.train_x, self.train_y, self.train_u = self.make_seq_to_seq(train_set, 20)              
+        # self.valid_x, self.valid_y, self.valid_u = self.make_seq_to_seq(valid_set, 20)        
+        self.train_x, self.train_y, self.train_m = self.make_mask_seq(train_set, "train")
+        self.valid_x, self.valid_y, self.valid_m = self.make_mask_seq(valid_set, "valid")
+
 
     def _make_negative_sample(self, train_set, valid_set):
         self.negative_sample = {}        
@@ -104,7 +107,91 @@ class DataLoader():
             data_set[user_id] = user_positive_movies
         
         return data_set
+    
+    def make_mask_seq(self, data_set, phase):
+        '''
+        Make masked sequence
+        x : I1, I2, I3, I4 -> y : I1, I2, <mask>, I4 
+        mask : 0, 0, 1, 0
+        '''
+        masking_prob = 0.2
+        sample_ratio = 10
+        
+        sequence_length = self.config["sequence_length"]
+        
+        x_array = np.empty((0, sequence_length), dtype = str)
+        y_array = np.empty((0, sequence_length), dtype = str)
+        mask_array = np.empty((0, sequence_length), dtype = int)
+        
+        keys = data_set.keys()
+        
+        for key in tqdm(keys):
+            movie_list = data_set[key]
+            movie_length = len(movie_list)
 
+            if movie_length >= 2:
+                sample_count = (movie_length) // sample_ratio
+                if sample_count == 0:
+                    sample_count = 1
+
+                '''
+                Select pivot index to slice inputs
+                pivot_idx : last index of sequence input
+                '''
+                pivot_idx_list = []
+                pivot_idx_list = random.sample(
+                                range(1, movie_length), sample_count)
+
+                for pivot_idx in pivot_idx_list:
+                    first_input_idx = pivot_idx + 1 - sequence_length
+                    
+                    x = []
+                    y = []
+                    
+                    # Make item vectors 
+                    padding_length = 0
+                    for idx in range(first_input_idx, pivot_idx+1):
+                        if idx < 0:
+                            padding_length += 1
+                            x.append("pad")
+                            y.append("pad")
+                        else:
+                            x.append(movie_list[idx])
+                            y.append(movie_list[idx])
+
+                    '''
+                    Make Masks
+                    - While training, masks are randomly choosen.
+                    - In validation step, mask is placed at the last item.
+                    '''
+                    mask = np.zeros((1, sequence_length), dtype = int)
+                    
+                    if phase == "train":
+                        masking_count = int((sequence_length - padding_length) * masking_prob)
+                        if masking_count == 0:
+                            masking_count = 1
+                            
+                        masking_idx_list = random.sample(
+                                            range(0, sequence_length), masking_count)
+                        for mask_idx in masking_idx_list:
+                            mask[0][mask_idx] = 1
+                            x[mask_idx] = "mask"
+                    else:
+                        mask[0][sequence_length - 1] = 1
+                        x[sequence_length - 1] = "mask"
+                    
+                    
+                    # Reshape and append
+                    x = np.reshape(x, (1, -1))
+                    y = np.reshape(y, (1, -1))
+
+                    x_array = np.append(x_array, x, axis = 0)
+                    y_array = np.append(y_array, y, axis = 0)
+                    mask_array = np.append(mask_array, mask, axis = 0)
+
+        return x_array, y_array, mask_array
+
+    
     def make_seq_to_seq(self, data_set, ratio):
         '''
         Make sequence to sequence inputs
@@ -223,14 +310,14 @@ class DataLoader():
 
     
     def get_dataset(self, phase):
-
+        
         batch_size = self.batch_size
         
         if phase == "train":
             x = self.string_lookup.str_to_idx(self.train_x)
             y = self.string_lookup.str_to_idx(self.train_y)
-              
-            dataset = tf.data.Dataset.from_tensor_slices((x, y))
+            
+            dataset = tf.data.Dataset.from_tensor_slices((x, y, self.train_m))
             dataset = dataset\
                         .batch(batch_size, drop_remainder=True)\
                         .shuffle(buffer_size = len(x))\
@@ -243,7 +330,7 @@ class DataLoader():
             x = self.string_lookup.str_to_idx(self.valid_x)
             y = self.string_lookup.str_to_idx(self.valid_y)
 
-            dataset = tf.data.Dataset.from_tensor_slices((x, y))
+            dataset = tf.data.Dataset.from_tensor_slices((x, y, self.valid_m))
             dataset = dataset\
                         .batch(batch_size, drop_remainder=True)\
                         .cache()\
