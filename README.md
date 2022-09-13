@@ -1,5 +1,5 @@
 # SAS for MovieLens 1M
-Self-Attentive Sequential Recommendation (2018) <br/>
+Bert4rec: Sequential recommendation with bidirectional encoder representations from transformer<br/>
 
 
 ## Code
