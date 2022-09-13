@@ -68,6 +68,7 @@ class TrainManager():
             if self.log["valid_loss"] < min_valid_loss:
                 not_update_count = 0
                 save_valid_hr = self.log["valid_hr"]
+                min_valid_loss = self.log["valid_loss"]
             else:
                 not_update_count += 1
             

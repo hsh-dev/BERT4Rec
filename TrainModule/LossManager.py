@@ -26,7 +26,7 @@ class LossManager():
                            indices = y_true,
                            axis = 2,
                            batch_dims = 2)
-        logits = -K.log(logits)
+        logits = -K.log(logits + 1e-10)
         
         mask_count = tf.cast(tf.math.count_nonzero(mask), tf.float32)
         mask = tf.cast(mask, tf.float32)
