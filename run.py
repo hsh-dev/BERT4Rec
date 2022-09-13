@@ -12,7 +12,7 @@ if __name__ == "__main__":
                  n_dim = config["sequence_length"],
                  d_dim = config["hidden_dim"],
                  h_num = 4,
-                 l_num = 4)    
+                 l_num = 2)    
     
     trainmanger = TrainManager(model, dataloader, config)
 
