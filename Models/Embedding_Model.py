@@ -14,7 +14,7 @@ class Embedding(Model):
         initializer = tf.keras.initializers.GlorotNormal()
 
         self.item_emb_mat = tf.Variable(
-            initializer(shape=[self.i_dim + 1, self.d_dim], dtype=tf.float32),
+            initializer(shape=[self.i_dim + 2, self.d_dim], dtype=tf.float32),
             trainable=True)
 
         self.pos_emb_mat = tf.Variable(

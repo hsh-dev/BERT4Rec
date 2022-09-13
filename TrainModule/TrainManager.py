@@ -97,9 +97,9 @@ class TrainManager():
         start_time = time.time()
 
         for idx, sample in enumerate(dataset):
-            x, y, mask = sample            
+            x, y, mask, pad = sample       
 
-            loss, y_pred, hr = self.propagate_with_graph(x, y, mask, phase, k = 10)
+            loss, y_pred, hr = self.propagate_with_graph(x, y, mask, pad, phase, k = 10)
                 
             all_loss_list.append(loss)
             loss_list.append(loss)
@@ -135,9 +135,9 @@ class TrainManager():
         one_hot = tf.one_hot(y, dim)
         return one_hot
 
-    @tf.function
-    def propagate_with_graph(self, x, y, mask, phase, k):
-        loss, y_pred = self.propagation(x, y, mask, phase)
+    # @tf.function
+    def propagate_with_graph(self, x, y, mask, pad, phase, k):
+        loss, y_pred = self.propagation(x, y, mask, pad, phase)
         
         hit_rate = 0
         if phase == "valid":
@@ -146,9 +146,9 @@ class TrainManager():
         return loss, y_pred, hit_rate
 
 
-    def propagation(self, x, y_true, mask, phase):
+    def propagation(self, x, y_true, mask, pad, phase):
         with tf.GradientTape() as tape:
-            y_pred = self.model(x)
+            y_pred = self.model(x, pad)
             
             # loss = self.loss_manager.bpr_loss(y_true, y_pred)
             loss = self.loss_manager.negative_log_with_mask(y_true, y_pred, mask)

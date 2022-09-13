@@ -20,10 +20,10 @@ class TransformerLayer(Model):
         
         self.ffn_block = FeedForwardBlock(d_dim, scale = 4, activation = "gelu")
 
-    def call(self, x):
+    def call(self, x, pad = None):
         # Multi Head Attention
         shortcut = x
-        x = self.mh_att_block(x)
+        x = self.mh_att_block(x, pad)
         x = self.dropout_1(x)
         x = x + shortcut
         x = self.layer_norm_1(x)

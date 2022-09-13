@@ -27,18 +27,23 @@ class BERT(Model):
         self.embedding_layer = Embedding(i_dim, d_dim, n_dim)
         
         # Trm
-        self.transformer_seq = Sequential()
+        self.transformer_seq = []
         for i in range(l_num):
-            self.transformer_seq.add(TransformerLayer(d_dim, h_num))
+            self.transformer_seq.append(TransformerLayer(d_dim, h_num))
+            
+        # self.transformer_seq = Sequential()
+        # for i in range(l_num):
+        #     self.transformer_seq.add(TransformerLayer(d_dim, h_num))
     
         # Prediction
         self.projection_layer = Dense(d_dim)
         self.prediction_layer = Dense(i_dim)
 
-    def call(self, x):
+    def call(self, x, pad=None):
         x, emb_mat = self.embedding_layer(x)
 
-        x = self.transformer_seq(x)
+        for i in range(self.l_num):
+            x = self.transformer_seq[i](x, pad)
 
         x = self.projection_layer(x)
         x = tf.nn.gelu(x)

@@ -16,7 +16,7 @@ config = {
 
     "numpy_seed": 10,
     "split_ratio": 0.8,
-    "hidden_dim": 80,              # hidden layer dimension of embedding layer
+    "hidden_dim": 40,              # hidden layer dimension of embedding layer
     "sequence_length": 20,          # sequence count of input
     "attention_layer_count": 2,  # count of attention layer
     "negative_sample_count": 100   # count of negative sample for each user

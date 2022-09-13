@@ -58,8 +58,8 @@ class DataLoader():
         
         # self.train_x, self.train_y, self.train_u = self.make_seq_to_seq(train_set, 20)              
         # self.valid_x, self.valid_y, self.valid_u = self.make_seq_to_seq(valid_set, 20)        
-        self.train_x, self.train_y, self.train_m = self.make_mask_seq(train_set, "train")
-        self.valid_x, self.valid_y, self.valid_m = self.make_mask_seq(valid_set, "valid")
+        self.train_x, self.train_y, self.train_m, self.train_p = self.make_mask_seq(train_set, "train")
+        self.valid_x, self.valid_y, self.valid_m, self.valid_p = self.make_mask_seq(valid_set, "valid")
 
 
     def _make_negative_sample(self, train_set, valid_set):
@@ -113,6 +113,7 @@ class DataLoader():
         Make masked sequence
         x : I1, I2, I3, I4 -> y : I1, I2, <mask>, I4 
         mask : 0, 0, 1, 0
+        pad : 1, 0, 0, 0
         '''
         masking_prob = 0.2
         sample_ratio = 10
@@ -122,6 +123,7 @@ class DataLoader():
         x_array = np.empty((0, sequence_length), dtype = str)
         y_array = np.empty((0, sequence_length), dtype = str)
         mask_array = np.empty((0, sequence_length), dtype = int)
+        pad_array = np.empty((0, sequence_length), dtype = int)
         
         keys = data_set.keys()
         
@@ -148,6 +150,9 @@ class DataLoader():
                     x = []
                     y = []
                     
+                    '''
+                    Make Paddings
+                    '''
                     # Make item vectors 
                     padding_length = 0
                     for idx in range(first_input_idx, pivot_idx+1):
@@ -158,7 +163,11 @@ class DataLoader():
                         else:
                             x.append(movie_list[idx])
                             y.append(movie_list[idx])
+                    pad = np.zeros((1, sequence_length), dtype = int)
+                    for i in range(padding_length):
+                        pad[0][i] = 1
 
+                            
                     '''
                     Make Masks
                     - While training, masks are randomly choosen.
@@ -188,8 +197,9 @@ class DataLoader():
                     x_array = np.append(x_array, x, axis = 0)
                     y_array = np.append(y_array, y, axis = 0)
                     mask_array = np.append(mask_array, mask, axis = 0)
+                    pad_array = np.append(pad_array, pad, axis = 0)
 
-        return x_array, y_array, mask_array
+        return x_array, y_array, mask_array, pad_array
 
     
     def make_seq_to_seq(self, data_set, ratio):
@@ -317,7 +327,7 @@ class DataLoader():
             x = self.string_lookup.str_to_idx(self.train_x)
             y = self.string_lookup.str_to_idx(self.train_y)
             
-            dataset = tf.data.Dataset.from_tensor_slices((x, y, self.train_m))
+            dataset = tf.data.Dataset.from_tensor_slices((x, y, self.train_m, self.train_p))
             dataset = dataset\
                         .batch(batch_size, drop_remainder=True)\
                         .shuffle(buffer_size = len(x))\
@@ -330,7 +340,7 @@ class DataLoader():
             x = self.string_lookup.str_to_idx(self.valid_x)
             y = self.string_lookup.str_to_idx(self.valid_y)
 
-            dataset = tf.data.Dataset.from_tensor_slices((x, y, self.valid_m))
+            dataset = tf.data.Dataset.from_tensor_slices((x, y, self.valid_m, self.valid_p))
             dataset = dataset\
                         .batch(batch_size, drop_remainder=True)\
                         .cache()\

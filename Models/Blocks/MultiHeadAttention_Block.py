@@ -24,17 +24,31 @@ class MultiHeadAttention(Model):
         inputs = tf.transpose(inputs, perm = [0, 2, 1, 3])
         return inputs
     
-    def attention(self, query, key, value, mask):
+    def attention(self, query, key, value, pad_mask, causality_mask = False):
         '''
         Calculate Attention Score
         B x H x N x D/H -> B x H x N x N
         '''
         dot_product = tf.matmul(query, key, transpose_b=True)
-
+        
         depth = tf.cast(tf.shape(key)[-1], tf.float32)
         logits = dot_product / tf.math.sqrt(depth)
+        
+        if pad_mask is not None:
+            pad_mask = pad_mask[:, tf.newaxis, :, tf.newaxis]
+            repeat = tf.constant([1, self.h_num, 1, 1], tf.int32)
+            pad_mask = tf.tile(pad_mask, repeat)
+            
+            pad_mask = -pad_mask + 1
+            product_pad_mask = tf.matmul(pad_mask, pad_mask, transpose_b=True)
+            product_pad_mask = -product_pad_mask + 1
+            product_pad_mask = tf.cast(product_pad_mask, dtype = tf.float32)
+            
+            mask = product_pad_mask * (-1e6)
+            logits = logits + mask
 
-        if mask:
+            
+        if causality_mask:
             n_dim = tf.shape(logits)[2]
             mask = tf.ones([n_dim, n_dim], dtype=tf.float32)
             mask = tf.linalg.band_part(mask, -1, 0)
@@ -57,7 +71,7 @@ class MultiHeadAttention(Model):
         return output
 
     
-    def call(self, x):
+    def call(self, x, pad = None):
         '''
         Input : B x N x D
         '''
@@ -83,7 +97,7 @@ class MultiHeadAttention(Model):
         Calculate Attention Score
         Shape : B x H x N x D/H
         '''
-        attention = self.attention(query, key, value, mask = False)
+        attention = self.attention(query, key, value, pad_mask = pad, causality_mask = False)
         
         '''
         Concatenate

@@ -4,7 +4,8 @@ import tensorflow as tf
 class StringLookup():
     def __init__(self, items) -> None:
         self.items = items  # item keys init
-
+        self.items.append("mask")
+        
         self.encoding_layer = tf.keras.layers.StringLookup(
             vocabulary=self.items)
 
