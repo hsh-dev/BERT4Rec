@@ -135,7 +135,7 @@ class TrainManager():
         one_hot = tf.one_hot(y, dim)
         return one_hot
 
-    # @tf.function
+    @tf.function
     def propagate_with_graph(self, x, y, mask, pad, phase, k):
         loss, y_pred = self.propagation(x, y, mask, pad, phase)
         

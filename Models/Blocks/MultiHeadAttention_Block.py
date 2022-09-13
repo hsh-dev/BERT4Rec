@@ -39,10 +39,11 @@ class MultiHeadAttention(Model):
             repeat = tf.constant([1, self.h_num, 1, 1], tf.int32)
             pad_mask = tf.tile(pad_mask, repeat)
             
-            pad_mask = -pad_mask + 1
+            pad_mask = tf.cast(tf.math.logical_not(tf.cast(pad_mask, dtype = tf.bool)), dtype = tf.int32)
             product_pad_mask = tf.matmul(pad_mask, pad_mask, transpose_b=True)
-            product_pad_mask = -product_pad_mask + 1
-            product_pad_mask = tf.cast(product_pad_mask, dtype = tf.float32)
+            product_pad_mask = tf.cast(tf.math.logical_not(tf.cast(product_pad_mask, dtype = tf.bool)), dtype = tf.float32)
+            # product_pad_mask = -product_pad_mask + tf.ones(shape=mask_shape, dtype=tf.int32)
+            # product_pad_mask = tf.cast(product_pad_mask, dtype = tf.float32)
             
             mask = product_pad_mask * (-1e6)
             logits = logits + mask
