@@ -1,4 +1,4 @@
-# SAS for MovieLens 1M
+# BERT4Rec for MovieLens 1M
 Bert4rec: Sequential recommendation with bidirectional encoder representations from transformer<br/>
 
 
