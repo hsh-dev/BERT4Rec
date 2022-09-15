@@ -49,7 +49,7 @@ class TrainManager():
         total_epoch = self.config["max_epoch"]
 
         min_valid_loss = 9999
-        save_valid_hr = 0
+        save_valid_hr = None
         
         not_update_count = 0
         
@@ -57,11 +57,12 @@ class TrainManager():
             print("\n# Epoch {} #".format(epoch+1))
             print("## Train Start ##")
             self.train_loop("train")
-            print("Train Loss : {} | HR@10 : {} \n".format(self.log["train_loss"], self.log["train_hr"]))
+            print("Train Loss : {} \n".format(self.log["train_loss"]))
 
             print("## Validation Start ##")
             self.train_loop("valid")
-            print("Valid Loss : {} | HR@10 : {}".format(self.log["valid_loss"], self.log["valid_hr"]))
+            print("Valid Loss : {} \n".format(self.log["valid_loss"]))
+            self.print_hit_rate(self.log["valid_hr"], self.valid_total_user)
             
             self.optimizer_wrap.update_lr(epoch)
             
@@ -72,11 +73,13 @@ class TrainManager():
             else:
                 not_update_count += 1
             
-            print("Best Validation Hit Rate : {}".format(save_valid_hr))
-             
             if not_update_count >= 20:
                 print("No update on valid loss. Early stop...")
                 break
+            
+        print("[Best Validation Hit Rate]")
+        self.print_hit_rate(save_valid_hr, self.valid_total_user)
+        
         return save_valid_hr
         
                 
@@ -88,48 +91,72 @@ class TrainManager():
             dataset = self.dataloader.get_dataset("valid")
             
         total_step = len(dataset)
+        if phase == "valid":
+            self.valid_total_user = total_step * self.batch_size
+            
         print_step = total_step // 3
         
         all_loss_list = []
         loss_list = []
-        all_hr_list = []
-        hr_list = []
+        
+        hr_keys = ['100', '50', '20', '10', '5', '3']
+        
+        all_hr_dict = {}
+        
+        init_hr_dict = {}
+        for key in hr_keys:
+            all_hr_dict[key] = 0
+            init_hr_dict[key] = 0
+        hr_dict = init_hr_dict
         
         start_time = time.time()
 
         for idx, sample in enumerate(dataset):
             x, y, mask, pad = sample       
 
-            loss, y_pred, hr = self.propagate_with_graph(x, y, mask, pad, phase, k = 10)
+            loss, y_pred, hr_number = self.propagate_with_graph(x, y, mask, pad, phase, k = 10)
                 
             all_loss_list.append(loss)
             loss_list.append(loss)
-            all_hr_list.append(hr)
-            hr_list.append(hr)
             
+            if phase == "valid":
+                for key in hr_keys:
+                    all_hr_dict[key] += hr_number[key]
+                    hr_dict[key] += hr_number[key]
+
             if (idx+1) % print_step == 0:
                 end_time = time.time()
                 
                 losses = np.average(np.array(loss_list))
-                hr_avg = np.average(np.array(hr_list))
                 print("STEP: {}/{} | Loss: {} | Time: {}s".format(
                                                                 idx+1, 
                                                                 total_step, 
-                                                                round(losses, 7), 
+                                                                round(losses.numpy(), 5), 
                                                                 round(end_time - start_time, 5)
                                                                 ))
                 if phase == "valid":
-                    print("HR: {} ".format(round(hr_avg, 7)))
-                
+                    self.print_hit_rate(hr_dict, print_step * self.batch_size)
+                    hr_dict = init_hr_dict
+                    
                 loss_list.clear()
-                hr_list.clear()
                 start_time = time.time()
                     
         total_loss = np.average(np.array(all_loss_list))
-        total_hr = np.average(np.array(all_hr_list))
         
-        self.save_logs(total_loss, total_hr, phase)
+        if phase == "valid":
+            self.log["valid_hr"] = all_hr_dict
+        self.save_logs(total_loss, phase)
     
+    def print_hit_rate(self, hr_dict, total_user):
+        print("HR@3 : {} | HR@5 : {} | HR@10 : {} |".format(
+                                                        round(hr_dict['3'].numpy()/total_user, 5),
+                                                        round(hr_dict['5'].numpy()/total_user, 5),
+                                                        round(hr_dict['10'].numpy()/total_user, 5)))
+        print("HR@20 : {} | HR@50 : {} | HR@100 : {} |\n".format(
+                                                        round(hr_dict['20'].numpy()/total_user, 5),
+                                                        round(hr_dict['50'].numpy()/total_user, 5),
+                                                        round(hr_dict['100'].numpy()/total_user, 5)))
+
 
     def make_one_hot_vector(self, y, dim):
         dim = tf.cast(dim, dtype = tf.int32)        
@@ -140,7 +167,7 @@ class TrainManager():
     def propagate_with_graph(self, x, y, mask, pad, phase, k):
         loss, y_pred = self.propagation(x, y, mask, pad, phase)
         
-        hit_rate = 0
+        hit_rate = None
         if phase == "valid":
             hit_rate = self.score_manager.hit_rate(y, y_pred, k)
         
@@ -165,10 +192,8 @@ class TrainManager():
     '''
     Save Functions
     '''
-    def save_logs(self, loss, hr, phase):
+    def save_logs(self, loss, phase):
         loss_key = phase + "_loss"
-        hr_key = phase + "_hr"
         
         self.log[loss_key] = loss
-        self.log[hr_key] = hr
     
