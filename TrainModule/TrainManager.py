@@ -131,7 +131,7 @@ class TrainManager():
                 print("STEP: {}/{} | Loss: {} | Time: {}s".format(
                                                                 idx+1, 
                                                                 total_step, 
-                                                                round(losses.numpy(), 5), 
+                                                                round(losses, 5), 
                                                                 round(end_time - start_time, 5)
                                                                 ))
                 if phase == "valid":
