@@ -102,12 +102,11 @@ class TrainManager():
         hr_keys = ['100', '50', '20', '10', '5', '3']
         
         all_hr_dict = {}
+        hr_dict = {}
         
-        init_hr_dict = {}
         for key in hr_keys:
             all_hr_dict[key] = 0
-            init_hr_dict[key] = 0
-        hr_dict = init_hr_dict
+            hr_dict[key] = 0
         
         start_time = time.time()
 
@@ -136,8 +135,9 @@ class TrainManager():
                                                                 ))
                 if phase == "valid":
                     self.print_hit_rate(hr_dict, print_step * self.batch_size)
-                    hr_dict = init_hr_dict
-                    
+                    for key in hr_keys:
+                        hr_dict[key] = 0     
+                                       
                 loss_list.clear()
                 start_time = time.time()
                     
