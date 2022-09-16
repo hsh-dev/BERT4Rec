@@ -37,55 +37,14 @@ class ScoreManager():
         
         total_user = y_pred.shape[0]
 
-        # HR@100
-        y_pred_top = y_pred_sort[:,:100]
+        metric_k = ['100', '50', '20', '10', '5', '3']
         
-        y_exist = tf.equal(y_pred_top, y_true)
-        y_exist = tf.cast(y_exist, tf.int32)
-        hit_number = tf.math.count_nonzero(y_exist)
-        hit_number_dict['100'] = hit_number
-        
-        # HR@50
-        y_pred_top = y_pred_top[:, :50]
-        
-        y_exist = tf.equal(y_pred_top, y_true)
-        y_exist = tf.cast(y_exist, tf.int32)
-        hit_number = tf.math.count_nonzero(y_exist)
-        hit_number_dict['50'] = hit_number 
-        
-        # HR@20
-        y_pred_top = y_pred_top[:, :20]
-
-        y_exist = tf.equal(y_pred_top, y_true)
-        y_exist = tf.cast(y_exist, tf.int32)
-        hit_number = tf.math.count_nonzero(y_exist)
-        hit_number_dict['20'] = hit_number 
-        
-        # HR@10
-        y_pred_top = y_pred_top[:, :10]
-
-        y_exist = tf.equal(y_pred_top, y_true)
-        y_exist = tf.cast(y_exist, tf.int32)
-        hit_number = tf.math.count_nonzero(y_exist)
-        hit_number_dict['10'] = hit_number 
-
-        # HR@5
-        y_pred_top = y_pred_top[:, :5]
-
-        y_exist = tf.equal(y_pred_top, y_true)
-        y_exist = tf.cast(y_exist, tf.int32)
-        hit_number = tf.math.count_nonzero(y_exist)
-        hit_number_dict['5'] = hit_number 
-    
-        # HR@3
-        y_pred_top = y_pred_top[:, :3]
-
-        y_exist = tf.equal(y_pred_top, y_true)
-        y_exist = tf.cast(y_exist, tf.int32)
-        hit_number = tf.math.count_nonzero(y_exist)
-        hit_number_dict['3'] = hit_number 
+        for k in metric_k:
+            top_k = int(k)
+            y_pred_top = y_pred_sort[:,:top_k]
+            y_exist = tf.equal(y_pred_top, y_true)
+            y_exist = tf.cast(y_exist, tf.int32)
+            hit_number = tf.math.count_nonzero(y_exist)
+            hit_number_dict[k] = hit_number
         
         return hit_number_dict
-
-        
-        
