@@ -1,7 +1,7 @@
 import tensorflow as tf
 import numpy as np
 import time
-import datetime
+import os
 
 from TrainModule.Scheduler import CosineDecayWrapper
 from TrainModule.LossManager import LossManager
@@ -70,6 +70,9 @@ class TrainManager():
                 not_update_count = 0
                 save_valid_hr = self.log["valid_hr"]
                 min_valid_loss = self.log["valid_loss"]
+                
+                # Save model when loss is updated
+                self.save_model()
             else:
                 not_update_count += 1
             
@@ -196,4 +199,10 @@ class TrainManager():
         loss_key = phase + "_loss"
         
         self.log[loss_key] = loss
-    
+        
+        
+    def save_model(self):
+        if not os.path.isdir('./save'):
+            os.mkdir('./save')
+            
+        self.model.save('./save/model', overwrite = True, save_format="tf")

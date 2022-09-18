@@ -2,7 +2,7 @@ import tensorflow as tf
 from keras import Model, Sequential
 from keras.layers import Dense
 
-from Models.Embedding_Model import Embedding
+from Models.Embedding_Model import EmbeddingModel
 from Models.Transformer_Layer import TransformerLayer
 
 class BERT(Model):
@@ -24,7 +24,7 @@ class BERT(Model):
         self.l_num = l_num
 
         # Emb
-        self.embedding_layer = Embedding(i_dim, d_dim, n_dim)
+        self.embedding_layer = EmbeddingModel(i_dim, d_dim, n_dim)
         
         # Trm
         self.transformer_seq = []

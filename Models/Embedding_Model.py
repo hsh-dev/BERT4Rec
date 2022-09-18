@@ -2,7 +2,7 @@ import tensorflow as tf
 from tensorflow.keras import Model
 
 
-class Embedding(Model):
+class EmbeddingModel(Model):
     def __init__(self, i_dim, d_dim, n_dim):
         super().__init__()
 

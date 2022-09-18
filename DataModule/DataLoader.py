@@ -8,7 +8,7 @@ from DataModule.Lookup import StringLookup
 import time
 
 class DataLoader():
-    def __init__(self, config) -> None:
+    def __init__(self, config, make_session = True) -> None:
         self.config = config
         
         self.batch_size = config["batch_size"]
@@ -26,7 +26,9 @@ class DataLoader():
         self._init_data_()
         self._init_length_()
         self._init_string_lookup_()
-        self._make_session_()
+        
+        if make_session:
+            self._make_session_()
         
     
     def _load_(self):
@@ -355,8 +357,9 @@ class DataLoader():
         idx = self.movies_data.index[self.movies_data[0] == id]
         idx = idx.tolist()[0]
         movie = self.movies_data.iat[idx, 1]
-
-        return movie
+        genre = self.movies_data.iat[idx, 2]
+        
+        return movie, genre
 
     def get_movie_len(self):
         return self.movie_len

@@ -3,7 +3,7 @@ from keras import Model
 from keras.layers import Dense, Softmax, ReLU, LayerNormalization, Dropout
 
 from Models.Blocks.FeedFoward_Block import FeedForwardBlock
-from Models.Blocks.MultiHeadAttention_Block import MultiHeadAttention
+from Models.Blocks.MultiHeadAttention_Block import MHABlock
 
 class TransformerLayer(Model):
     def __init__(self, d_dim, h_num):
@@ -16,7 +16,7 @@ class TransformerLayer(Model):
         self.dropout_1 = Dropout(0.2)
         self.dropout_2 = Dropout(0.2)
 
-        self.mh_att_block = MultiHeadAttention(d_dim, h_num)
+        self.mh_att_block = MHABlock(d_dim, h_num)
         
         self.ffn_block = FeedForwardBlock(d_dim, scale = 4, activation = "gelu")
 

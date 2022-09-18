@@ -2,7 +2,7 @@ import tensorflow as tf
 from keras import Model
 from keras.layers import Dense
 
-class MultiHeadAttention(Model):
+class MHABlock(Model):
     def __init__(self, d_dim, h_num):
         super().__init__()
         
