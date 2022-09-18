@@ -11,8 +11,8 @@ if __name__ == "__main__":
     model = BERT(i_dim = item_count,
                  n_dim = config["sequence_length"],
                  d_dim = config["hidden_dim"],
-                 h_num = 3,
-                 l_num = 3)    
+                 h_num = 2,
+                 l_num = 2)    
     
     trainmanger = TrainManager(model, dataloader, config)
 

@@ -32,18 +32,32 @@ class DataLoader():
         
     
     def _load_(self):
-        self.movies_data = pd.read_csv(self.movies_path, delimiter = "::", header = None, engine = "python", encoding = "ISO-8859-1")
-        self.ratings_data = pd.read_csv(self.ratings_path, delimiter = "::", header = None, engine = "python", encoding = "ISO-8859-1")
-        self.users_data = pd.read_csv(self.users_path, delimiter = "::", header = None, engine = "python", encoding = "ISO-8859-1")
+        
+        movie_columns = ['MovieID', 'Title', 'Genres']
+        movie_column_dtypes = [str, str, str]
+        self.movies_data = pd.read_csv(self.movies_path, encoding='latin-1', sep='::',
+                                       dtype={k: v for k, v in zip(movie_columns, movie_column_dtypes)}, names=movie_columns,  engine='python')
+        
+        rating_columns = ['UserID', 'MovieID', 'Rating', 'Timestamp']
+        rating_column_dtypes = [str, str, int, int]
+        ratings = pd.read_csv(self.ratings_path, encoding='latin-1', sep='::',
+                                        dtype={k: v for k, v in zip(rating_columns, rating_column_dtypes)}, names=rating_columns, engine='python')
+        ratings = ratings.sort_values(by='Timestamp', ascending=True)
+        self.ratings_data = ratings
+        
+        user_columns = ['UserID', 'Gender', 'Age', 'Occupation', 'Zip-code']
+        user_column_dtypes = [str, str, str, str, str]
+        self.users_data = pd.read_csv(self.users_path, encoding='latin-1', sep='::',
+                                      dtype={k: v for k, v in zip(user_columns, user_column_dtypes)}, names=user_columns, engine='python')
 
     def _init_length_(self):
         self.movie_len = len(self.movie_ids)
     
     def _init_data_(self):
         self.movie_ids = list(
-                        map(lambda x : str(x), self.movies_data[0].unique()))
+                        map(lambda x : str(x), self.movies_data['MovieID'].unique()))
         self.user_ids = list(
-                        map(lambda x: str(x), self.users_data[0].unique()))
+                        map(lambda x: str(x), self.users_data['UserID'].unique()))
     
     def _init_string_lookup_(self):
         item_list = self.get_movie_ids()
@@ -56,10 +70,11 @@ class DataLoader():
         train_set = self.collect_movie_list(train_user)
         valid_set = self.collect_movie_list(valid_user)   
         
-        self._make_negative_sample(train_set, valid_set)
+        # self._make_negative_sample(train_set, valid_set)
         
         # self.train_x, self.train_y, self.train_u = self.make_seq_to_seq(train_set, 20)              
         # self.valid_x, self.valid_y, self.valid_u = self.make_seq_to_seq(valid_set, 20)        
+        
         self.train_x, self.train_y, self.train_m, self.train_p = self.make_mask_seq(train_set, "train")
         self.valid_x, self.valid_y, self.valid_m, self.valid_p = self.make_mask_seq(valid_set, "valid")
 
@@ -85,7 +100,7 @@ class DataLoader():
             self.negative_sample[str(key)] = negative_item_list
     
     def split_user(self):
-        user = np.array(self.users_data[0].unique())
+        user = np.array(self.users_data['UserID'].unique())
         
         np.random.seed(self.config["numpy_seed"])
         np.random.shuffle(user)
@@ -98,14 +113,15 @@ class DataLoader():
         return train_user, valid_user
         
     def collect_movie_list(self, user_list):
-        ratings = self.ratings_data.iloc[:, 0:3]
+
+        # ratings = self.ratings_data.iloc[:, 0:3]
         
         data_set = {}
 
         for user_id in user_list:
-            user_ratings = ratings[ratings[0] == user_id]   ## collect movie list and ratings for the user id
-
-            user_positive_movies = list(map(lambda x: str(x), user_ratings[1]))
+            user_ratings = self.ratings_data[self.ratings_data['UserID'] == user_id] #ratings[ratings[0] == user_id]   ## collect movie list and ratings for the user id
+            
+            user_positive_movies = list(map(lambda x: str(x), user_ratings['MovieID']))
             data_set[user_id] = user_positive_movies
         
         return data_set
